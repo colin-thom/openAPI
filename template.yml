@@ -26,6 +26,20 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: specification/spec.yml
+  Table:
+    Type: AWS::DynamoDB::Table
+    properties:
+      TableName: "campus-l3-dev-app-thomas-table-device-dev"
+      AttributeDefinitions:
+      -
+        AttributeName: "id"
+        AttributeType: "N"
+      -
+        AttributeName: "deviceName"
+        AttributeType: "S"
+      -
+        AttributeName: "deviceType"
+        AttributeType: "S"
   ApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -39,19 +53,19 @@ Resources:
           - Effect: Allow
             Principal:
               Service:
-              - apigateway.amazonaws.com
-              Action: sts:AssumeRole
+                - apigateway.amazonaws.com
+            Action: sts:AssumeRole
       Policies:
         - PolicyName:
             Fn::Sub: ${AppName}-api-execution-role-policy-${Stage}
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - lambda:InvokeFunction
-            Resource:
-              Fn::Sub: ${GetDevices.Arn}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  Fn::Sub: ${GetDevices.Arn}
   GetDevices:
     Type: AWS::Serverless::Function
     Properties:
@@ -61,5 +75,5 @@ Resources:
       FunctionName:
         Fn::Sub: ${AppName}-get-devices-${Stage}
       Description: Get the list of devices
-      CodeUri: .
+      CodeUri: ./src
       Handler: devices.get_devices

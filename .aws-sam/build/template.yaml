@@ -7,6 +7,9 @@ Parameters:
   Stage:
     Type: String
     Default: dev
+  TableName:
+    Type: String
+    Default: campus-l3-dev-app-thomas-table-device-dev
 Resources:
   Api:
     Type: AWS::Serverless::Api
@@ -19,12 +22,42 @@ Resources:
       Name:
         Fn::Sub: ${AppName}-api-${Stage}
       StageName:
-        Ref: Stage
+        Fn::Sub: ${Stage}
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
             Location: ../../specification/spec.yml
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: deviceName
+        AttributeType: S
+      - AttributeName: deviceType
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: '10'
+        WriteCapacityUnits: '10'
+      TableName:
+        Fn::Sub: ${TableName}
+      GlobalSecondaryIndexes:
+      - IndexName: index
+        KeySchema:
+        - AttributeName: deviceName
+          KeyType: HASH
+        - AttributeName: deviceType
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+        ProvisionedThroughput:
+          ReadCapacityUnits: '10'
+          WriteCapacityUnits: '10'
   ApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -62,3 +95,18 @@ Resources:
       Description: Get the list of devices
       CodeUri: GetDevices
       Handler: devices.get_devices
+      Policies:
+        Version: '2012-10-17'
+        Statement:
+          Sid: ReadWriteTable
+          Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          Resource:
+            Fn::Sub: arn:aws:dynamodb:*:*:table/${TableName}
+      Environment:
+        Variables:
+          DEVICES_TABLE:
+            Fn::Sub: ${TableName}

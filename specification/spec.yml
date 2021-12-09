@@ -47,3 +47,57 @@ paths:
         httpMethod: POST
         timeoutInMillis: 3000
         type: "aws_proxy"
+  /add:
+    get:
+      description: "add on list of devices"
+      responses:
+        '200':
+          description: OK
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/device'
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::Sub: ${ApiRole.Arn}
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AddDevice.Arn}/invocations
+        httpMethod: POST
+        timeoutInMillis: 3000
+        type: "aws_proxy"
+  /update:
+    get:
+      description: "update on list of devices"
+      responses:
+        '200':
+          description: OK
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/device'
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::Sub: ${ApiRole.Arn}
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateDevice.Arn}/invocations
+        httpMethod: POST
+        timeoutInMillis: 3000
+        type: "aws_proxy"
+  /delete:
+    get:
+      description: "delete on list of devices"
+      responses:
+        '200':
+          description: OK
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/device'
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::Sub: ${ApiRole.Arn}
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteDevice.Arn}/invocations
+        httpMethod: POST
+        timeoutInMillis: 3000
+        type: "aws_proxy"

@@ -35,7 +35,7 @@ Resources:
     Properties:
       AttributeDefinitions:
       -
-        AttributeName: "id"
+        AttributeName: "deviceId"
         AttributeType: "S"
       -
         AttributeName: "deviceName"
@@ -45,7 +45,7 @@ Resources:
         AttributeType: "S"
       KeySchema: 
       -
-        AttributeName: "id"
+        AttributeName: "deviceId"
         KeyType: "HASH"
       ProvisionedThroughput: 
         ReadCapacityUnits: "10"
@@ -92,7 +92,67 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource:
-                  Fn::Sub: ${GetDevices.Arn}
+                  - Fn::Sub: ${GetDevices.Arn}
+        - PolicyName:
+            Fn::Sub: ${AppName}-api-execution-role-policy-add-${Stage}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - Fn::Sub: ${AddDevice.Arn}
+        - PolicyName:
+            Fn::Sub: ${AppName}-api-execution-role-policy-update-${Stage}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - Fn::Sub: ${UpdateDevice.Arn}
+        - PolicyName:
+            Fn::Sub: ${AppName}-api-execution-role-policy-delete-${Stage}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - Fn::Sub: ${DeleteDevice.Arn}
+  DbRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path:
+        Fn::Sub: /${Stage}/${AppName}/serviceRoles/
+      RoleName:
+        Fn::Sub: ${AppName}-function-execution-role-${Stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${AppName}-function-execution-role-policy-${Stage}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+                Sid: SpecificTable
+                Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource: "*"
   GetDevices:
     Type: AWS::Serverless::Function
     Properties:
@@ -104,17 +164,59 @@ Resources:
       Description: Get the list of devices
       CodeUri: ./src
       Handler: devices.get_devices
-      Policies:
-        Version: '2012-10-17'
-        Statement:
-          Sid: "ReadWriteTable"
-          Effect: Allow
-          Action:
-          - dynamodb:GetItem
-          - dynamodb:Query
-          - dynamodb:Scan
-          Resource:
-            Fn::Sub: arn:aws:dynamodb:*:*:table/${TableName}
+      Role:
+        Fn::Sub: ${DbRole.Arn}
+      Environment:
+        Variables:
+          DEVICES_TABLE:
+            Fn::Sub: ${TableName}
+  AddDevice:
+    Type: AWS::Serverless::Function
+    Properties:
+      Tracing: Active
+      Runtime: python3.8
+      PackageType: Zip
+      FunctionName:
+        Fn::Sub: ${AppName}-add-device-${Stage}
+      Description: add on list of devices
+      CodeUri: ./src
+      Handler: devices.add_device
+      Role: 
+        Fn::Sub: ${DbRole.Arn}
+      Environment:
+        Variables:
+          DEVICES_TABLE:
+            Fn::Sub: ${TableName}
+  UpdateDevice:
+    Type: AWS::Serverless::Function
+    Properties:
+      Tracing: Active
+      Runtime: python3.8
+      PackageType: Zip
+      FunctionName:
+        Fn::Sub: ${AppName}-update-device-${Stage}
+      Description: update on list of devices
+      CodeUri: ./src
+      Handler: devices.update_device
+      Role: 
+        Fn::Sub: ${DbRole.Arn}
+      Environment:
+        Variables:
+          DEVICES_TABLE:
+            Fn::Sub: ${TableName}
+  DeleteDevice:
+    Type: AWS::Serverless::Function
+    Properties:
+      Tracing: Active
+      Runtime: python3.8
+      PackageType: Zip
+      FunctionName:
+        Fn::Sub: ${AppName}-delete-device-${Stage}
+      Description: delete on list of devices
+      CodeUri: ./src
+      Handler: devices.delete_device
+      Role: 
+        Fn::Sub: ${DbRole.Arn}
       Environment:
         Variables:
           DEVICES_TABLE:

@@ -28,6 +28,18 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: ../../specification/spec.yml
+      Auth:
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: "cl\xE9 de thomas"
+          Quota:
+            Limit: 5000
+            Period: MONTH
+          Throttle:
+            BurstLimit: 200
+            RateLimit: 100
+          UsagePlanName: thomasPlan
+        ApiKeyRequired: 'true'
   ApiRole:
     Type: AWS::IAM::Role
     Properties:

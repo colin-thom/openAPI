@@ -2,7 +2,7 @@ openapi: '3.0.2'
 info:
   title: Latune API
   version: '1.0'
-  description: 'Ceci est une API'
+  description: 'API DE Thomas'
 servers:
   - url: https://api.server.test/v1
 
@@ -47,9 +47,10 @@ paths:
         httpMethod: POST
         timeoutInMillis: 3000
         type: "aws_proxy"
+
   /add:
-    get:
-      description: "add on list of devices"
+    post:
+      description: "Add device"
       responses:
         '200':
           description: OK
@@ -65,9 +66,10 @@ paths:
         httpMethod: POST
         timeoutInMillis: 3000
         type: "aws_proxy"
+
   /update:
-    get:
-      description: "update on list of devices"
+    post:
+      description: "update device"
       responses:
         '200':
           description: OK
@@ -83,9 +85,10 @@ paths:
         httpMethod: POST
         timeoutInMillis: 3000
         type: "aws_proxy"
+
   /delete:
-    get:
-      description: "delete on list of devices"
+    post:
+      description: "delete device"
       responses:
         '200':
           description: OK

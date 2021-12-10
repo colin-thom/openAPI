@@ -28,36 +28,6 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: ../../specification/spec.yml
-  Table:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      AttributeDefinitions:
-      - AttributeName: deviceId
-        AttributeType: S
-      - AttributeName: deviceName
-        AttributeType: S
-      - AttributeName: deviceType
-        AttributeType: S
-      KeySchema:
-      - AttributeName: deviceId
-        KeyType: HASH
-      ProvisionedThroughput:
-        ReadCapacityUnits: '10'
-        WriteCapacityUnits: '10'
-      TableName:
-        Fn::Sub: ${TableName}
-      GlobalSecondaryIndexes:
-      - IndexName: index
-        KeySchema:
-        - AttributeName: deviceName
-          KeyType: HASH
-        - AttributeName: deviceType
-          KeyType: RANGE
-        Projection:
-          ProjectionType: ALL
-        ProvisionedThroughput:
-          ReadCapacityUnits: '10'
-          WriteCapacityUnits: '10'
   ApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -83,44 +53,29 @@ Resources:
             Action:
             - lambda:InvokeFunction
             Resource:
-            - Fn::Sub: ${GetDevices.Arn}
-      - PolicyName:
-          Fn::Sub: ${AppName}-api-execution-role-policy-add-${Stage}
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
+              Fn::Sub: ${GetDevices.Arn}
           - Effect: Allow
             Action:
             - lambda:InvokeFunction
             Resource:
-            - Fn::Sub: ${AddDevice.Arn}
-      - PolicyName:
-          Fn::Sub: ${AppName}-api-execution-role-policy-update-${Stage}
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
+              Fn::Sub: ${AddDevice.Arn}
           - Effect: Allow
             Action:
             - lambda:InvokeFunction
             Resource:
-            - Fn::Sub: ${UpdateDevice.Arn}
-      - PolicyName:
-          Fn::Sub: ${AppName}-api-execution-role-policy-delete-${Stage}
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
+              Fn::Sub: ${UpdateDevice.Arn}
           - Effect: Allow
             Action:
             - lambda:InvokeFunction
             Resource:
-            - Fn::Sub: ${DeleteDevice.Arn}
-  DbRole:
+              Fn::Sub: ${DeleteDevice.Arn}
+  DBRole:
     Type: AWS::IAM::Role
     Properties:
       Path:
         Fn::Sub: /${Stage}/${AppName}/serviceRoles/
       RoleName:
-        Fn::Sub: ${AppName}-function-execution-role-${Stage}
+        Fn::Sub: ${AppName}-db-interactions-role-${Stage}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -131,19 +86,20 @@ Resources:
           Action: sts:AssumeRole
       Policies:
       - PolicyName:
-          Fn::Sub: ${AppName}-function-execution-role-policy-${Stage}
+          Fn::Sub: ${AppName}-db-interactions-role-policy-dynamo-${Stage}
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-            Sid: SpecificTable
-            Effect: Allow
+          - Effect: Allow
             Action:
             - dynamodb:Scan
             - dynamodb:Query
             - dynamodb:GetItem
+            - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
-            Resource: '*'
+            Resource:
+              Fn::Sub: ${devicesTable.Arn}
   GetDevices:
     Type: AWS::Serverless::Function
     Properties:
@@ -156,7 +112,7 @@ Resources:
       CodeUri: GetDevices
       Handler: devices.get_devices
       Role:
-        Fn::Sub: ${DbRole.Arn}
+        Fn::Sub: ${DBRole.Arn}
       Environment:
         Variables:
           DEVICES_TABLE:
@@ -169,11 +125,11 @@ Resources:
       PackageType: Zip
       FunctionName:
         Fn::Sub: ${AppName}-add-device-${Stage}
-      Description: add on list of devices
+      Description: Add a device
       CodeUri: AddDevice
       Handler: devices.add_device
       Role:
-        Fn::Sub: ${DbRole.Arn}
+        Fn::Sub: ${DBRole.Arn}
       Environment:
         Variables:
           DEVICES_TABLE:
@@ -186,11 +142,11 @@ Resources:
       PackageType: Zip
       FunctionName:
         Fn::Sub: ${AppName}-update-device-${Stage}
-      Description: update on list of devices
+      Description: Update a device
       CodeUri: UpdateDevice
       Handler: devices.update_device
       Role:
-        Fn::Sub: ${DbRole.Arn}
+        Fn::Sub: ${DBRole.Arn}
       Environment:
         Variables:
           DEVICES_TABLE:
@@ -203,12 +159,42 @@ Resources:
       PackageType: Zip
       FunctionName:
         Fn::Sub: ${AppName}-delete-device-${Stage}
-      Description: delete on list of devices
+      Description: Delete a device
       CodeUri: DeleteDevice
       Handler: devices.delete_device
       Role:
-        Fn::Sub: ${DbRole.Arn}
+        Fn::Sub: ${DBRole.Arn}
       Environment:
         Variables:
           DEVICES_TABLE:
             Fn::Sub: ${TableName}
+  devicesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: ${TableName}
+      AttributeDefinitions:
+      - AttributeName: deviceId
+        AttributeType: S
+      - AttributeName: deviceName
+        AttributeType: S
+      - AttributeName: deviceType
+        AttributeType: S
+      KeySchema:
+      - AttributeName: deviceId
+        KeyType: HASH
+      GlobalSecondaryIndexes:
+      - IndexName: nomIndex
+        KeySchema:
+        - AttributeName: deviceType
+          KeyType: HASH
+        - AttributeName: deviceName
+          KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: '200'
+          WriteCapacityUnits: '200'
+        Projection:
+          ProjectionType: ALL
+      ProvisionedThroughput:
+        ReadCapacityUnits: '200'
+        WriteCapacityUnits: '200'
